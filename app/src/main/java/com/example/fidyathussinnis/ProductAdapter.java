@@ -1,0 +1,72 @@
+package com.example.fidyathussinnis;
+
+import android.content.Context;
+import android.view.LayoutInflater;
+import android.view.View;
+import android.view.ViewGroup;
+import android.widget.Button;
+import android.widget.TextView;
+import android.widget.Toast;
+
+import androidx.annotation.NonNull;
+import androidx.recyclerview.widget.RecyclerView;
+
+import java.util.ArrayList;
+
+public class ProductAdapter extends RecyclerView.Adapter<ProductAdapter.ProductViewHolder> {
+
+    public interface OnCartChangedListener {
+        void onCartChanged();
+    }
+
+    private Context context;
+    private ArrayList<Product> productList;
+    private OnCartChangedListener listener;
+
+    public ProductAdapter(Context context, ArrayList<Product> productList, OnCartChangedListener listener) {
+        this.context = context;
+        this.productList = productList;
+        this.listener = listener;
+    }
+
+    @NonNull
+    @Override
+    public ProductViewHolder onCreateViewHolder(@NonNull ViewGroup parent, int viewType) {
+        View view = LayoutInflater.from(context).inflate(R.layout.item_product, parent, false);
+        return new ProductViewHolder(view);
+    }
+
+    @Override
+    public void onBindViewHolder(@NonNull ProductViewHolder holder, int position) {
+        Product product = productList.get(position);
+
+        holder.tvProductName.setText(product.getName());
+        holder.tvProductPrice.setText(product.getPrice() + " ₪");
+
+        holder.btnAddToCart.setOnClickListener(v -> {
+            CartManager.addToCart(context, new CartItem(product.getName(), product.getPrice(), 1));
+            Toast.makeText(context, "تمت إضافة " + product.getName() + " إلى السلة", Toast.LENGTH_SHORT).show();
+
+            if (listener != null) {
+                listener.onCartChanged();
+            }
+        });
+    }
+
+    @Override
+    public int getItemCount() {
+        return productList.size();
+    }
+
+    public static class ProductViewHolder extends RecyclerView.ViewHolder {
+        TextView tvProductName, tvProductPrice;
+        Button btnAddToCart;
+
+        public ProductViewHolder(@NonNull View itemView) {
+            super(itemView);
+            tvProductName = itemView.findViewById(R.id.tvProductName);
+            tvProductPrice = itemView.findViewById(R.id.tvProductPrice);
+            btnAddToCart = itemView.findViewById(R.id.btnAddToCart);
+        }
+    }
+}
