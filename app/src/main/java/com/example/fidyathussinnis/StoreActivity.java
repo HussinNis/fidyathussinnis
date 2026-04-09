@@ -18,15 +18,15 @@ import com.android.volley.toolbox.Volley;
 import java.text.SimpleDateFormat;
 import java.util.Date;
 import java.util.Locale;
+import java.util.HashMap;
+import java.util.Map;
 
 public class StoreActivity extends AppCompatActivity {
 
     private TextView tvWelcomeUser, tvSilverPrice, tvLastUpdate;
     private Button btnBars, btnAccessories, btnCalculator, btnCart, btnLogout;
 
-    private double silverPricePerGram = 4.5;
-    private static final String API_KEY = "LNQZBEMNS0MRKLMYUKUH401MYUKUH";
-
+    private double silverPricePerGram = 4.5; // fallback
     private final Handler handler = new Handler(Looper.getMainLooper());
     private final int REFRESH_INTERVAL = 60000; // 60 ثانية
 
@@ -69,12 +69,14 @@ public class StoreActivity extends AppCompatActivity {
         btnBars.setOnClickListener(v -> {
             Intent intent = new Intent(StoreActivity.this, ProductsActivity.class);
             intent.putExtra("type", "bars");
+            intent.putExtra("silver_price", silverPricePerGram);
             startActivity(intent);
         });
 
         btnAccessories.setOnClickListener(v -> {
             Intent intent = new Intent(StoreActivity.this, ProductsActivity.class);
             intent.putExtra("type", "accessories");
+            intent.putExtra("silver_price", silverPricePerGram);
             startActivity(intent);
         });
 
@@ -106,37 +108,69 @@ public class StoreActivity extends AppCompatActivity {
     }
 
     private void fetchSilverPrice() {
-        String url = "https://api.metals.dev/v1/latest?api_key=" + API_KEY + "&currency=ILS&unit=g";
+        String silverUrl = "https://api.gold-api.com/price/XAG";
+        String usdIlsUrl = "https://open.er-api.com/v6/latest/USD";
 
         RequestQueue queue = Volley.newRequestQueue(this);
 
-        JsonObjectRequest request = new JsonObjectRequest(
+        JsonObjectRequest silverRequest = new JsonObjectRequest(
                 Request.Method.GET,
-                url,
+                silverUrl,
                 null,
-                response -> {
+                silverResponse -> {
                     try {
-                        double liveSilverPrice = response
-                                .getJSONObject("metals")
-                                .getDouble("silver");
+                        double silverPerOunceUsd = silverResponse.getDouble("price");
 
-                        silverPricePerGram = liveSilverPrice;
-                        tvSilverPrice.setText("سعر جرام الفضة: " + silverPricePerGram + " ₪");
-                        tvLastUpdate.setText("آخر تحديث: " + getCurrentTime());
+                        JsonObjectRequest ilsRequest = new JsonObjectRequest(
+                                Request.Method.GET,
+                                usdIlsUrl,
+                                null,
+                                ilsResponse -> {
+                                    try {
+                                        double usdToIls = ilsResponse
+                                                .getJSONObject("rates")
+                                                .getDouble("ILS");
+
+                                        double silverPerOunceIls = silverPerOunceUsd * usdToIls;
+                                        silverPricePerGram = silverPerOunceIls / 31.1035;
+
+                                        tvSilverPrice.setText(
+                                                "سعر جرام الفضة: " +
+                                                        String.format(java.util.Locale.getDefault(), "%.2f", silverPricePerGram) +
+                                                        " ₪"
+                                        );
+                                        tvLastUpdate.setText("آخر تحديث: " + getCurrentTime());
+
+                                    } catch (Exception e) {
+                                        tvSilverPrice.setText("خطأ في تحويل السعر");
+                                        tvLastUpdate.setText("آخر تحديث: " + getCurrentTime());
+                                        e.printStackTrace();
+                                    }
+                                },
+                                error -> {
+                                    tvSilverPrice.setText("فشل تحميل سعر الدولار/شيكل");
+                                    tvLastUpdate.setText("آخر تحديث: " + getCurrentTime());
+                                    error.printStackTrace();
+                                }
+                        );
+
+                        queue.add(ilsRequest);
+
                     } catch (Exception e) {
-                        tvSilverPrice.setText("سعر جرام الفضة: " + silverPricePerGram + " ₪");
+                        tvSilverPrice.setText("خطأ في قراءة سعر الفضة");
                         tvLastUpdate.setText("آخر تحديث: " + getCurrentTime());
+                        e.printStackTrace();
                     }
                 },
                 error -> {
-                    tvSilverPrice.setText("سعر جرام الفضة: " + silverPricePerGram + " ₪");
+                    tvSilverPrice.setText("فشل تحميل سعر الفضة");
                     tvLastUpdate.setText("آخر تحديث: " + getCurrentTime());
+                    error.printStackTrace();
                 }
         );
 
-        queue.add(request);
+        queue.add(silverRequest);
     }
-
     private String getCurrentTime() {
         SimpleDateFormat sdf = new SimpleDateFormat("HH:mm:ss", Locale.getDefault());
         return sdf.format(new Date());

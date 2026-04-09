@@ -7,8 +7,8 @@
 
     <Button
         android:id="@+id/btnBackFromCart"
-        android:layout_width="100dp"
-        android:layout_height="47dp"
+        android:layout_width="48dp"
+        android:layout_height="48dp"
         android:text="🔙"
         android:textSize="20sp"
         android:layout_marginBottom="16dp" />

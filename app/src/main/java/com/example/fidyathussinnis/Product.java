@@ -2,18 +2,24 @@ package com.example.fidyathussinnis;
 
 public class Product {
     private String name;
-    private double price;
+    private int price;
+    private String details;
 
-    public Product(String name, double price) {
+    public Product(String name, int price, String details) {
         this.name = name;
         this.price = price;
+        this.details = details;
     }
 
     public String getName() {
         return name;
     }
 
-    public double getPrice() {
+    public int getPrice() {
         return price;
+    }
+
+    public String getDetails() {
+        return details;
     }
 }

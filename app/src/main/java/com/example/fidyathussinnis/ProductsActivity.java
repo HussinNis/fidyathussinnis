@@ -1,7 +1,6 @@
 package com.example.fidyathussinnis;
 
 import android.content.Intent;
-import android.content.SharedPreferences;
 import android.os.Bundle;
 import android.widget.Button;
 import android.widget.TextView;
@@ -22,6 +21,9 @@ public class ProductsActivity extends AppCompatActivity {
     private ArrayList<Product> productList;
     private ProductAdapter adapter;
 
+    private double silverPricePerGram = 4.5;
+    private final double profitPercent = 0.10;
+
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -34,26 +36,27 @@ public class ProductsActivity extends AppCompatActivity {
         btnLogoutFromProducts = findViewById(R.id.btnLogoutFromProducts);
 
         String type = getIntent().getStringExtra("type");
+        silverPricePerGram = getIntent().getDoubleExtra("silver_price", 4.5);
 
         productList = new ArrayList<>();
 
         if (type != null && type.equals("bars")) {
             tvProductsTitle.setText("السبائك");
 
-            productList.add(new Product("سبيكة 250 غرام", 250.0));
-            productList.add(new Product("سبيكة 500 غرام", 500.0));
-            productList.add(new Product("سبيكة 1 كيلو", 1000.0));
-            productList.add(new Product("أونصة سويسرية", 120.0));
-            productList.add(new Product("أونصة إيطالية", 125.0));
+            addBarProduct("سبيكة 250 غرام", 250);
+            addBarProduct("سبيكة 500 غرام", 500);
+            addBarProduct("سبيكة 1 كيلو", 1000);
+            addBarProduct("أونصة سويسرية", 31.1035);
+            addBarProduct("أونصة إيطالية", 31.1035);
 
         } else if (type != null && type.equals("accessories")) {
             tvProductsTitle.setText("الإكسسوارات");
 
-            productList.add(new Product("خاتم فضة رجالي", 80.0));
-            productList.add(new Product("خاتم فضة نسائي", 75.0));
-            productList.add(new Product("سوار فضة", 150.0));
-            productList.add(new Product("سلسال فضة", 180.0));
-            productList.add(new Product("حلق فضة", 60.0));
+            productList.add(new Product("خاتم فضة رجالي", 80, "خاتم فضة جاهز بسعر ثابت"));
+            productList.add(new Product("خاتم فضة نسائي", 75, "خاتم فضة نسائي بسعر ثابت"));
+            productList.add(new Product("سوار فضة", 150, "سوار فضة أنيق بسعر ثابت"));
+            productList.add(new Product("سلسال فضة", 180, "سلسال فضة بسعر ثابت"));
+            productList.add(new Product("حلق فضة", 60, "حلق فضة بسعر ثابت"));
         }
 
         adapter = new ProductAdapter(this, productList, this::updateCartButtonCount);
@@ -68,7 +71,6 @@ public class ProductsActivity extends AppCompatActivity {
         });
 
         btnBackToStore.setOnClickListener(v -> finish());
-
         btnLogoutFromProducts.setOnClickListener(v -> showLogoutDialog());
     }
 
@@ -76,6 +78,23 @@ public class ProductsActivity extends AppCompatActivity {
     protected void onResume() {
         super.onResume();
         updateCartButtonCount();
+    }
+
+    private void addBarProduct(String name, double grams) {
+        double basePrice = grams * silverPricePerGram;
+        double profit = basePrice * profitPercent;
+        int finalPrice = (int) Math.round(basePrice + profit);
+
+        String details = "الوزن: " + formatNumber(grams) + " غرام"
+                + "\nالسعر الخام: " + (int) Math.round(basePrice) + " ₪"
+                + "\nالهامش: " + (int) Math.round(profit) + " ₪"
+                + "\nالسعر النهائي: " + finalPrice + " ₪";
+
+        productList.add(new Product(name, finalPrice, details));
+    }
+
+    private String formatNumber(double value) {
+        return String.valueOf((int) Math.round(value));
     }
 
     private void updateCartButtonCount() {

@@ -41,9 +41,11 @@ public class ProductAdapter extends RecyclerView.Adapter<ProductAdapter.ProductV
         Product product = productList.get(position);
 
         holder.tvProductName.setText(product.getName());
-        holder.tvProductPrice.setText(product.getPrice() + " ₪");
+        holder.tvProductDetails.setText(product.getDetails());
+        holder.tvProductPrice.setText("السعر: " + product.getPrice() + " ₪");
 
         holder.btnAddToCart.setOnClickListener(v -> {
+            // هنا يتم تثبيت السعر وقت الإضافة إلى السلة
             CartManager.addToCart(context, new CartItem(product.getName(), product.getPrice(), 1));
             Toast.makeText(context, "تمت إضافة " + product.getName() + " إلى السلة", Toast.LENGTH_SHORT).show();
 
@@ -59,12 +61,13 @@ public class ProductAdapter extends RecyclerView.Adapter<ProductAdapter.ProductV
     }
 
     public static class ProductViewHolder extends RecyclerView.ViewHolder {
-        TextView tvProductName, tvProductPrice;
+        TextView tvProductName, tvProductDetails, tvProductPrice;
         Button btnAddToCart;
 
         public ProductViewHolder(@NonNull View itemView) {
             super(itemView);
             tvProductName = itemView.findViewById(R.id.tvProductName);
+            tvProductDetails = itemView.findViewById(R.id.tvProductDetails);
             tvProductPrice = itemView.findViewById(R.id.tvProductPrice);
             btnAddToCart = itemView.findViewById(R.id.btnAddToCart);
         }

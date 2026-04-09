@@ -2,10 +2,10 @@ package com.example.fidyathussinnis;
 
 public class CartItem {
     private String name;
-    private double price;
+    private int price;
     private int quantity;
 
-    public CartItem(String name, double price, int quantity) {
+    public CartItem(String name, int price, int quantity) {
         this.name = name;
         this.price = price;
         this.quantity = quantity;
@@ -15,7 +15,7 @@ public class CartItem {
         return name;
     }
 
-    public double getPrice() {
+    public int getPrice() {
         return price;
     }
 

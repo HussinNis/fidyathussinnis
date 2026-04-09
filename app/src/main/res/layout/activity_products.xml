@@ -14,7 +14,7 @@
 
         <Button
             android:id="@+id/btnBackToStore"
-            android:layout_width="70dp"
+            android:layout_width="48dp"
             android:layout_height="48dp"
             android:text="🔙"
             android:textSize="20sp"
@@ -39,7 +39,7 @@
 
         <Button
             android:id="@+id/btnLogoutFromProducts"
-            android:layout_width="60dp"
+            android:layout_width="48dp"
             android:layout_height="48dp"
             android:text="🚪"
             android:textSize="20sp" />

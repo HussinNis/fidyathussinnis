@@ -60,7 +60,7 @@ public class CartActivity extends AppCompatActivity {
     }
 
     private void updateTotalPrice() {
-        double total = 0;
+        int total = 0;
 
         for (CartItem item : cartList) {
             total += item.getPrice() * item.getQuantity();
