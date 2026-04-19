@@ -1,102 +1,205 @@
 package com.example.fidyathussinnis;
 
-import android.content.Context;
-import android.content.SharedPreferences;
+import com.google.firebase.auth.FirebaseAuth;
+import com.google.firebase.auth.FirebaseUser;
+import com.google.firebase.firestore.CollectionReference;
+import com.google.firebase.firestore.FirebaseFirestore;
+import com.google.firebase.firestore.ListenerRegistration;
+import com.google.firebase.firestore.QueryDocumentSnapshot;
+import com.google.firebase.firestore.WriteBatch;
 
-import com.google.gson.Gson;
-import com.google.gson.reflect.TypeToken;
-
-import java.lang.reflect.Type;
 import java.util.ArrayList;
 
 public class CartManager {
 
-    private static final String PREF_NAME = "cart_pref";
-    private static ArrayList<CartItem> cartItems = new ArrayList<>();
+    public interface CartLoadCallback {
+        void onCartLoaded(ArrayList<CartItem> cartItems);
+        void onFailure(String message);
+    }
 
-    private static String getCartKey(Context context) {
-        User currentUser = UserManager.getCurrentUser(context);
+    public interface CartActionCallback {
+        void onSuccess();
+        void onFailure(String message);
+    }
 
-        if (currentUser != null) {
-            return "cart_" + currentUser.getPhone();
+    public interface CartCountCallback {
+        void onCountLoaded(int count);
+        void onFailure(String message);
+    }
+
+    public interface CartCountListenerCallback {
+        void onCountChanged(int count);
+        void onFailure(String message);
+    }
+
+    private static CollectionReference getCartCollection() {
+        FirebaseUser currentUser = FirebaseAuth.getInstance().getCurrentUser();
+
+        if (currentUser == null) {
+            return null;
         }
 
-        return "cart_guest";
+        return FirebaseFirestore.getInstance()
+                .collection("users")
+                .document(currentUser.getUid())
+                .collection("cartItems");
     }
 
-    public static void loadCart(Context context) {
-        SharedPreferences prefs = context.getSharedPreferences(PREF_NAME, Context.MODE_PRIVATE);
-        String json = prefs.getString(getCartKey(context), null);
+    public static void addToCart(CartItem newItem, CartActionCallback callback) {
+        CollectionReference cartCollection = getCartCollection();
 
-        if (json != null) {
-            Gson gson = new Gson();
-            Type type = new TypeToken<ArrayList<CartItem>>() {}.getType();
-            cartItems = gson.fromJson(json, type);
-        } else {
-            cartItems = new ArrayList<>();
+        if (cartCollection == null) {
+            callback.onFailure("لا يوجد مستخدم مسجل الدخول");
+            return;
         }
 
-        if (cartItems == null) {
-            cartItems = new ArrayList<>();
+        cartCollection.document(newItem.getName())
+                .get()
+                .addOnSuccessListener(documentSnapshot -> {
+                    if (documentSnapshot.exists()) {
+                        CartItem oldItem = documentSnapshot.toObject(CartItem.class);
+
+                        int oldQuantity = oldItem != null ? oldItem.getQuantity() : 0;
+                        int newQuantity = oldQuantity + newItem.getQuantity();
+
+                        cartCollection.document(newItem.getName())
+                                .update("quantity", newQuantity)
+                                .addOnSuccessListener(unused -> callback.onSuccess())
+                                .addOnFailureListener(e -> callback.onFailure(e.getMessage()));
+                    } else {
+                        cartCollection.document(newItem.getName())
+                                .set(newItem)
+                                .addOnSuccessListener(unused -> callback.onSuccess())
+                                .addOnFailureListener(e -> callback.onFailure(e.getMessage()));
+                    }
+                })
+                .addOnFailureListener(e -> callback.onFailure(e.getMessage()));
+    }
+
+    public static ListenerRegistration listenToCart(CartLoadCallback callback) {
+        CollectionReference cartCollection = getCartCollection();
+
+        if (cartCollection == null) {
+            callback.onFailure("لا يوجد مستخدم مسجل الدخول");
+            return null;
         }
-    }
 
-    public static void saveCart(Context context) {
-        SharedPreferences prefs = context.getSharedPreferences(PREF_NAME, Context.MODE_PRIVATE);
-        SharedPreferences.Editor editor = prefs.edit();
-
-        Gson gson = new Gson();
-        String json = gson.toJson(cartItems);
-
-        editor.putString(getCartKey(context), json);
-        editor.apply();
-    }
-
-    public static ArrayList<CartItem> getCartItems(Context context) {
-        loadCart(context);
-        return cartItems;
-    }
-
-    public static void addToCart(Context context, CartItem newItem) {
-        loadCart(context);
-
-        for (CartItem item : cartItems) {
-            if (item.getName().equals(newItem.getName())) {
-                item.setQuantity(item.getQuantity() + newItem.getQuantity());
-                saveCart(context);
+        return cartCollection.addSnapshotListener((snapshots, error) -> {
+            if (error != null) {
+                callback.onFailure(error.getMessage());
                 return;
             }
+
+            ArrayList<CartItem> items = new ArrayList<>();
+
+            if (snapshots != null) {
+                for (QueryDocumentSnapshot doc : snapshots) {
+                    CartItem item = doc.toObject(CartItem.class);
+                    items.add(item);
+                }
+            }
+
+            callback.onCartLoaded(items);
+        });
+    }
+
+    public static ListenerRegistration listenToCartCount(CartCountListenerCallback callback) {
+        CollectionReference cartCollection = getCartCollection();
+
+        if (cartCollection == null) {
+            callback.onCountChanged(0);
+            return null;
         }
 
-        cartItems.add(newItem);
-        saveCart(context);
+        return cartCollection.addSnapshotListener((snapshots, error) -> {
+            if (error != null) {
+                callback.onFailure(error.getMessage());
+                return;
+            }
+
+            int totalCount = 0;
+
+            if (snapshots != null) {
+                for (QueryDocumentSnapshot doc : snapshots) {
+                    CartItem item = doc.toObject(CartItem.class);
+                    totalCount += item.getQuantity();
+                }
+            }
+
+            callback.onCountChanged(totalCount);
+        });
     }
 
-    public static void removeItem(Context context, int position) {
-        loadCart(context);
+    public static void updateQuantity(String itemName, int newQuantity, CartActionCallback callback) {
+        CollectionReference cartCollection = getCartCollection();
 
-        if (position >= 0 && position < cartItems.size()) {
-            cartItems.remove(position);
-            saveCart(context);
+        if (cartCollection == null) {
+            callback.onFailure("لا يوجد مستخدم مسجل الدخول");
+            return;
         }
+
+        cartCollection.document(itemName)
+                .update("quantity", newQuantity)
+                .addOnSuccessListener(unused -> callback.onSuccess())
+                .addOnFailureListener(e -> callback.onFailure(e.getMessage()));
     }
 
-    public static void clearCart(Context context) {
-        cartItems.clear();
-        saveCart(context);
-    }
+    public static void removeItem(String itemName, CartActionCallback callback) {
+        CollectionReference cartCollection = getCartCollection();
 
-    public static int getTotalItemsCount(Context context) {
-        loadCart(context);
-
-        int totalCount = 0;
-        for (CartItem item : cartItems) {
-            totalCount += item.getQuantity();
+        if (cartCollection == null) {
+            callback.onFailure("لا يوجد مستخدم مسجل الدخول");
+            return;
         }
-        return totalCount;
+
+        cartCollection.document(itemName)
+                .delete()
+                .addOnSuccessListener(unused -> callback.onSuccess())
+                .addOnFailureListener(e -> callback.onFailure(e.getMessage()));
     }
 
-    public static void updateCart(Context context) {
-        saveCart(context);
+    public static void clearCart(CartActionCallback callback) {
+        CollectionReference cartCollection = getCartCollection();
+
+        if (cartCollection == null) {
+            callback.onFailure("لا يوجد مستخدم مسجل الدخول");
+            return;
+        }
+
+        cartCollection.get()
+                .addOnSuccessListener(queryDocumentSnapshots -> {
+                    WriteBatch batch = FirebaseFirestore.getInstance().batch();
+
+                    for (QueryDocumentSnapshot doc : queryDocumentSnapshots) {
+                        batch.delete(doc.getReference());
+                    }
+
+                    batch.commit()
+                            .addOnSuccessListener(unused -> callback.onSuccess())
+                            .addOnFailureListener(e -> callback.onFailure(e.getMessage()));
+                })
+                .addOnFailureListener(e -> callback.onFailure(e.getMessage()));
+    }
+
+    public static void getTotalItemsCount(CartCountCallback callback) {
+        CollectionReference cartCollection = getCartCollection();
+
+        if (cartCollection == null) {
+            callback.onCountLoaded(0);
+            return;
+        }
+
+        cartCollection.get()
+                .addOnSuccessListener(queryDocumentSnapshots -> {
+                    int total = 0;
+
+                    for (QueryDocumentSnapshot doc : queryDocumentSnapshots) {
+                        CartItem item = doc.toObject(CartItem.class);
+                        total += item.getQuantity();
+                    }
+
+                    callback.onCountLoaded(total);
+                })
+                .addOnFailureListener(e -> callback.onFailure(e.getMessage()));
     }
 }

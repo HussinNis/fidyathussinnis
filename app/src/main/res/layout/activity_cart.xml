@@ -3,55 +3,84 @@
     android:layout_width="match_parent"
     android:layout_height="match_parent"
     android:orientation="vertical"
-    android:padding="16dp">
+    android:padding="16dp"
+    android:background="#F5F7FB">
 
-    <Button
-        android:id="@+id/btnBackFromCart"
-        android:layout_width="48dp"
-        android:layout_height="48dp"
-        android:text="🔙"
-        android:textSize="20sp"
-        android:layout_marginBottom="16dp" />
-
-    <TextView
-        android:id="@+id/tvCartTitle"
-        android:layout_width="wrap_content"
+    <LinearLayout
+        android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:text="سلة المشتريات"
-        android:textSize="24sp"
-        android:textStyle="bold"
-        android:layout_gravity="center_horizontal"
-        android:layout_marginBottom="16dp" />
+        android:orientation="horizontal"
+        android:gravity="center_vertical"
+        android:layout_marginBottom="16dp">
+
+        <Button
+            android:id="@+id/btnBackFromCart"
+            android:layout_width="70dp"
+            android:layout_height="50dp"
+            android:text="🔙"
+            android:textSize="20sp"
+            android:textColor="#111827"
+            android:background="@drawable/bg_card"
+            android:layout_marginEnd="8dp" />
+
+        <TextView
+            android:id="@+id/tvCartTitle"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:text="سلة المشتريات"
+            android:textSize="26sp"
+            android:textStyle="bold"
+            android:textColor="#111827" />
+    </LinearLayout>
 
     <androidx.recyclerview.widget.RecyclerView
         android:id="@+id/recyclerCart"
         android:layout_width="match_parent"
         android:layout_height="0dp"
-        android:layout_weight="1" />
+        android:layout_weight="1"
+        android:clipToPadding="false"
+        android:paddingBottom="8dp" />
 
-    <TextView
-        android:id="@+id/tvTotalPrice"
+    <LinearLayout
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:text="المجموع: 0 ₪"
-        android:textSize="20sp"
-        android:textStyle="bold"
-        android:padding="12dp"
-        android:layout_marginTop="8dp" />
+        android:orientation="vertical"
+        android:background="@drawable/bg_card"
+        android:padding="16dp"
+        android:layout_marginTop="12dp">
 
-    <Button
-        android:id="@+id/btnClearCart"
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:text="حذف كل المنتجات"
-        android:layout_marginTop="8dp" />
+        <TextView
+            android:id="@+id/tvTotalPrice"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="المجموع: 0 ₪"
+            android:textSize="22sp"
+            android:textStyle="bold"
+            android:textColor="#111827"
+            android:layout_marginBottom="14dp" />
 
-    <Button
-        android:id="@+id/btnCheckout"
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:text="إتمام الطلب"
-        android:textSize="18sp"
-        android:layout_marginTop="12dp" />
+        <Button
+            android:id="@+id/btnClearCart"
+            android:layout_width="match_parent"
+            android:layout_height="52dp"
+            android:text="حذف كل المنتجات"
+            android:textSize="17sp"
+            android:textStyle="bold"
+            android:textColor="#111827"
+            android:background="@drawable/bg_card"
+            android:layout_marginBottom="10dp" />
+
+        <Button
+            android:id="@+id/btnCheckout"
+            android:layout_width="match_parent"
+            android:layout_height="54dp"
+            android:text="إتمام الطلب"
+            android:textSize="18sp"
+            android:textStyle="bold"
+            android:textColor="#FFFFFF"
+            android:background="@drawable/bg_button_primary" />
+
+    </LinearLayout>
 
 </LinearLayout>

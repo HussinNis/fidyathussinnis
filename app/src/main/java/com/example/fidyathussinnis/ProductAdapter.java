@@ -5,6 +5,7 @@ import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.Button;
+import android.widget.ImageView;
 import android.widget.TextView;
 import android.widget.Toast;
 
@@ -40,18 +41,33 @@ public class ProductAdapter extends RecyclerView.Adapter<ProductAdapter.ProductV
     public void onBindViewHolder(@NonNull ProductViewHolder holder, int position) {
         Product product = productList.get(position);
 
+        holder.imgProduct.setImageResource(product.getImageResId());
         holder.tvProductName.setText(product.getName());
         holder.tvProductDetails.setText(product.getDetails());
         holder.tvProductPrice.setText("السعر: " + product.getPrice() + " ₪");
 
         holder.btnAddToCart.setOnClickListener(v -> {
-            // هنا يتم تثبيت السعر وقت الإضافة إلى السلة
-            CartManager.addToCart(context, new CartItem(product.getName(), product.getPrice(), 1));
-            Toast.makeText(context, "تمت إضافة " + product.getName() + " إلى السلة", Toast.LENGTH_SHORT).show();
+            CartItem cartItem = new CartItem(
+                    product.getName(),
+                    product.getPrice(),
+                    1,
+                    product.getImageResId()
+            );
 
-            if (listener != null) {
-                listener.onCartChanged();
-            }
+            CartManager.addToCart(cartItem, new CartManager.CartActionCallback() {
+                @Override
+                public void onSuccess() {
+                    Toast.makeText(context, "تمت إضافة المنتج إلى السلة", Toast.LENGTH_SHORT).show();
+                    if (listener != null) {
+                        listener.onCartChanged();
+                    }
+                }
+
+                @Override
+                public void onFailure(String message) {
+                    Toast.makeText(context, "فشل الإضافة: " + message, Toast.LENGTH_LONG).show();
+                }
+            });
         });
     }
 
@@ -61,11 +77,13 @@ public class ProductAdapter extends RecyclerView.Adapter<ProductAdapter.ProductV
     }
 
     public static class ProductViewHolder extends RecyclerView.ViewHolder {
+        ImageView imgProduct;
         TextView tvProductName, tvProductDetails, tvProductPrice;
         Button btnAddToCart;
 
         public ProductViewHolder(@NonNull View itemView) {
             super(itemView);
+            imgProduct = itemView.findViewById(R.id.imgProduct);
             tvProductName = itemView.findViewById(R.id.tvProductName);
             tvProductDetails = itemView.findViewById(R.id.tvProductDetails);
             tvProductPrice = itemView.findViewById(R.id.tvProductPrice);

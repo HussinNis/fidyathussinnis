@@ -9,22 +9,35 @@ import android.widget.TextView;
 import android.widget.Toast;
 
 import androidx.appcompat.app.AppCompatActivity;
+import androidx.core.content.ContextCompat;
+
+import com.google.firebase.auth.FirebaseAuth;
+import com.google.firebase.auth.FirebaseUser;
+import com.google.firebase.firestore.FirebaseFirestore;
+
+import java.util.HashMap;
+import java.util.Map;
 
 public class WelcomeActivity extends AppCompatActivity {
 
-    private EditText etFullName, etPhone, etPassword;
+    private EditText etFullName, etEmail, etPassword;
     private Button btnTabLogin, btnTabSignup, btnSubmit;
     private TextView tvModeHint;
 
     private boolean isLoginMode = true;
+    private FirebaseAuth auth;
+    private FirebaseFirestore db;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_welcome);
 
+        auth = FirebaseAuth.getInstance();
+        db = FirebaseFirestore.getInstance();
+
         etFullName = findViewById(R.id.etFullName);
-        etPhone = findViewById(R.id.etPhone);
+        etEmail = findViewById(R.id.etEmail);
         etPassword = findViewById(R.id.etPassword);
         btnTabLogin = findViewById(R.id.btnTabLogin);
         btnTabSignup = findViewById(R.id.btnTabSignup);
@@ -48,29 +61,43 @@ public class WelcomeActivity extends AppCompatActivity {
     }
 
     private void checkLoggedInUser() {
-        User currentUser = UserManager.getCurrentUser(this);
+        FirebaseUser currentUser = auth.getCurrentUser();
         if (currentUser != null) {
-            openStore(currentUser.getFullName());
+            loadUserNameAndOpenStore(currentUser.getUid());
         }
     }
 
     private void switchToLogin() {
         isLoginMode = true;
+
         etFullName.setVisibility(View.GONE);
         btnSubmit.setText("Log In");
         tvModeHint.setText("Welcome back");
+
+        btnTabLogin.setBackground(ContextCompat.getDrawable(this, R.drawable.bg_button_primary));
+        btnTabSignup.setBackground(ContextCompat.getDrawable(this, R.drawable.bg_card));
+
+        btnTabLogin.setTextColor(ContextCompat.getColor(this, android.R.color.white));
+        btnTabSignup.setTextColor(0xFF111827);
     }
 
     private void switchToSignup() {
         isLoginMode = false;
+
         etFullName.setVisibility(View.VISIBLE);
         btnSubmit.setText("Sign Up");
         tvModeHint.setText("Create your account");
+
+        btnTabSignup.setBackground(ContextCompat.getDrawable(this, R.drawable.bg_button_primary));
+        btnTabLogin.setBackground(ContextCompat.getDrawable(this, R.drawable.bg_card));
+
+        btnTabSignup.setTextColor(ContextCompat.getColor(this, android.R.color.white));
+        btnTabLogin.setTextColor(0xFF111827);
     }
 
     private void signupUser() {
         String fullName = etFullName.getText().toString().trim();
-        String phone = etPhone.getText().toString().trim();
+        String email = etEmail.getText().toString().trim();
         String password = etPassword.getText().toString().trim();
 
         if (fullName.isEmpty()) {
@@ -78,8 +105,8 @@ public class WelcomeActivity extends AppCompatActivity {
             return;
         }
 
-        if (phone.isEmpty()) {
-            etPhone.setError("Enter phone number");
+        if (email.isEmpty()) {
+            etEmail.setError("Enter email");
             return;
         }
 
@@ -88,28 +115,44 @@ public class WelcomeActivity extends AppCompatActivity {
             return;
         }
 
-        User newUser = new User(fullName, phone, password);
-        boolean success = UserManager.registerUser(this, newUser);
+        auth.createUserWithEmailAndPassword(email, password)
+                .addOnSuccessListener(authResult -> {
+                    FirebaseUser firebaseUser = auth.getCurrentUser();
 
-        if (!success) {
-            Toast.makeText(this, "This phone number is already registered", Toast.LENGTH_SHORT).show();
-            return;
-        }
+                    if (firebaseUser == null) {
+                        Toast.makeText(this, "User creation failed", Toast.LENGTH_SHORT).show();
+                        return;
+                    }
 
-        User loggedInUser = UserManager.loginUser(this, phone, password);
-        Toast.makeText(this, "Account created successfully", Toast.LENGTH_SHORT).show();
+                    String uid = firebaseUser.getUid();
 
-        if (loggedInUser != null) {
-            openStore(loggedInUser.getFullName());
-        }
+                    Map<String, Object> userMap = new HashMap<>();
+                    userMap.put("fullName", fullName);
+                    userMap.put("email", email);
+                    userMap.put("createdAt", System.currentTimeMillis());
+
+                    db.collection("users")
+                            .document(uid)
+                            .set(userMap)
+                            .addOnSuccessListener(unused -> {
+                                Toast.makeText(this, "Account created successfully", Toast.LENGTH_SHORT).show();
+                                openStore(fullName);
+                            })
+                            .addOnFailureListener(e ->
+                                    Toast.makeText(this, "Failed to save user data: " + e.getMessage(), Toast.LENGTH_LONG).show()
+                            );
+                })
+                .addOnFailureListener(e ->
+                        Toast.makeText(this, "Sign up failed: " + e.getMessage(), Toast.LENGTH_LONG).show()
+                );
     }
 
     private void loginUser() {
-        String phone = etPhone.getText().toString().trim();
+        String email = etEmail.getText().toString().trim();
         String password = etPassword.getText().toString().trim();
 
-        if (phone.isEmpty()) {
-            etPhone.setError("Enter phone number");
+        if (email.isEmpty()) {
+            etEmail.setError("Enter email");
             return;
         }
 
@@ -118,14 +161,47 @@ public class WelcomeActivity extends AppCompatActivity {
             return;
         }
 
-        User user = UserManager.loginUser(this, phone, password);
+        auth.signInWithEmailAndPassword(email, password)
+                .addOnSuccessListener(authResult -> {
+                    FirebaseUser currentUser = auth.getCurrentUser();
 
-        if (user != null) {
-            Toast.makeText(this, "Login successful", Toast.LENGTH_SHORT).show();
-            openStore(user.getFullName());
-        } else {
-            Toast.makeText(this, "Wrong phone number or password", Toast.LENGTH_SHORT).show();
-        }
+                    if (currentUser == null) {
+                        Toast.makeText(this, "Login failed", Toast.LENGTH_SHORT).show();
+                        return;
+                    }
+
+                    Toast.makeText(this, "Login successful", Toast.LENGTH_SHORT).show();
+                    loadUserNameAndOpenStore(currentUser.getUid());
+                })
+                .addOnFailureListener(e ->
+                        Toast.makeText(this, "Login failed: " + e.getMessage(), Toast.LENGTH_LONG).show()
+                );
+    }
+
+    private void loadUserNameAndOpenStore(String uid) {
+        db.collection("users")
+                .document(uid)
+                .get()
+                .addOnSuccessListener(documentSnapshot -> {
+                    String fullName = documentSnapshot.getString("fullName");
+
+                    if (fullName != null && !fullName.isEmpty()) {
+                        openStore(fullName);
+                    } else {
+                        FirebaseUser currentUser = auth.getCurrentUser();
+                        String fallbackName = currentUser != null && currentUser.getEmail() != null
+                                ? currentUser.getEmail()
+                                : "User";
+                        openStore(fallbackName);
+                    }
+                })
+                .addOnFailureListener(e -> {
+                    FirebaseUser currentUser = auth.getCurrentUser();
+                    String fallbackName = currentUser != null && currentUser.getEmail() != null
+                            ? currentUser.getEmail()
+                            : "User";
+                    openStore(fallbackName);
+                });
     }
 
     private void openStore(String name) {

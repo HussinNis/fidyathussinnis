@@ -14,21 +14,21 @@ import com.android.volley.Request;
 import com.android.volley.RequestQueue;
 import com.android.volley.toolbox.JsonObjectRequest;
 import com.android.volley.toolbox.Volley;
+import com.google.firebase.firestore.ListenerRegistration;
 
 import java.text.SimpleDateFormat;
 import java.util.Date;
 import java.util.Locale;
-import java.util.HashMap;
-import java.util.Map;
 
 public class StoreActivity extends AppCompatActivity {
 
     private TextView tvWelcomeUser, tvSilverPrice, tvLastUpdate;
-    private Button btnBars, btnAccessories, btnCalculator, btnCart, btnLogout;
+    private Button btnBars, btnAccessories, btnCalculator, btnCart, btnLogout, btnOrders;
 
-    private double silverPricePerGram = 4.5; // fallback
+    private double silverPricePerGram = 4.5;
     private final Handler handler = new Handler(Looper.getMainLooper());
-    private final int REFRESH_INTERVAL = 60000; // 60 ثانية
+    private final int REFRESH_INTERVAL = 60000;
+    private ListenerRegistration cartCountListener;
 
     private final Runnable priceUpdater = new Runnable() {
         @Override
@@ -51,6 +51,7 @@ public class StoreActivity extends AppCompatActivity {
         btnCalculator = findViewById(R.id.btnCalculator);
         btnCart = findViewById(R.id.btnCart);
         btnLogout = findViewById(R.id.btnLogout);
+        btnOrders = findViewById(R.id.btnOrders);
 
         String name = getIntent().getStringExtra("name");
 
@@ -91,6 +92,11 @@ public class StoreActivity extends AppCompatActivity {
             startActivity(intent);
         });
 
+        btnOrders.setOnClickListener(v -> {
+            Intent intent = new Intent(StoreActivity.this, OrdersActivity.class);
+            startActivity(intent);
+        });
+
         btnLogout.setOnClickListener(v -> showLogoutDialog());
     }
 
@@ -105,6 +111,15 @@ public class StoreActivity extends AppCompatActivity {
     protected void onPause() {
         super.onPause();
         handler.removeCallbacks(priceUpdater);
+    }
+
+    @Override
+    protected void onDestroy() {
+        super.onDestroy();
+
+        if (cartCountListener != null) {
+            cartCountListener.remove();
+        }
     }
 
     private void fetchSilverPrice() {
@@ -136,7 +151,7 @@ public class StoreActivity extends AppCompatActivity {
 
                                         tvSilverPrice.setText(
                                                 "سعر جرام الفضة: " +
-                                                        String.format(java.util.Locale.getDefault(), "%.2f", silverPricePerGram) +
+                                                        String.format(Locale.getDefault(), "%.2f", silverPricePerGram) +
                                                         " ₪"
                                         );
                                         tvLastUpdate.setText("آخر تحديث: " + getCurrentTime());
@@ -144,13 +159,11 @@ public class StoreActivity extends AppCompatActivity {
                                     } catch (Exception e) {
                                         tvSilverPrice.setText("خطأ في تحويل السعر");
                                         tvLastUpdate.setText("آخر تحديث: " + getCurrentTime());
-                                        e.printStackTrace();
                                     }
                                 },
                                 error -> {
                                     tvSilverPrice.setText("فشل تحميل سعر الدولار/شيكل");
                                     tvLastUpdate.setText("آخر تحديث: " + getCurrentTime());
-                                    error.printStackTrace();
                                 }
                         );
 
@@ -159,26 +172,38 @@ public class StoreActivity extends AppCompatActivity {
                     } catch (Exception e) {
                         tvSilverPrice.setText("خطأ في قراءة سعر الفضة");
                         tvLastUpdate.setText("آخر تحديث: " + getCurrentTime());
-                        e.printStackTrace();
                     }
                 },
                 error -> {
                     tvSilverPrice.setText("فشل تحميل سعر الفضة");
                     tvLastUpdate.setText("آخر تحديث: " + getCurrentTime());
-                    error.printStackTrace();
                 }
         );
 
         queue.add(silverRequest);
     }
+
     private String getCurrentTime() {
         SimpleDateFormat sdf = new SimpleDateFormat("HH:mm:ss", Locale.getDefault());
         return sdf.format(new Date());
     }
 
     private void updateCartButtonCount() {
-        int count = CartManager.getTotalItemsCount(this);
-        btnCart.setText("🛒 " + count);
+        if (cartCountListener != null) {
+            cartCountListener.remove();
+        }
+
+        cartCountListener = CartManager.listenToCartCount(new CartManager.CartCountListenerCallback() {
+            @Override
+            public void onCountChanged(int count) {
+                btnCart.setText("🛒 " + count);
+            }
+
+            @Override
+            public void onFailure(String message) {
+                btnCart.setText("🛒 0");
+            }
+        });
     }
 
     private void showLogoutDialog() {
@@ -191,7 +216,7 @@ public class StoreActivity extends AppCompatActivity {
     }
 
     private void logoutUser() {
-        UserManager.logout(this);
+        FirebaseUserManager.logout();
 
         Intent intent = new Intent(StoreActivity.this, WelcomeActivity.class);
         intent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TASK);

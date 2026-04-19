@@ -2,10 +2,12 @@ package com.example.fidyathussinnis;
 
 import android.app.AlertDialog;
 import android.content.Context;
+import android.widget.Toast;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.ImageButton;
+import android.widget.ImageView;
 import android.widget.TextView;
 
 import androidx.annotation.NonNull;
@@ -39,34 +41,77 @@ public class CartAdapter extends RecyclerView.Adapter<CartAdapter.CartViewHolder
     @Override
     public void onBindViewHolder(@NonNull CartViewHolder holder, int position) {
         CartItem item = cartList.get(position);
+        int itemTotal = item.getPrice() * item.getQuantity();
 
+        holder.imgCartItem.setImageResource(item.getImageResId());
         holder.tvName.setText(item.getName());
-        holder.tvPrice.setText(item.getPrice() + " ₪");
+        holder.tvPrice.setText("سعر الوحدة: " + item.getPrice() + " ₪");
         holder.tvQuantity.setText(String.valueOf(item.getQuantity()));
+        holder.tvTotal.setText("إجمالي المنتج: " + itemTotal + " ₪");
 
         holder.btnPlus.setOnClickListener(v -> {
-            item.setQuantity(item.getQuantity() + 1);
-            CartManager.updateCart(context);
-            notifyItemChanged(position);
-            listener.onCartUpdated();
+            int newQuantity = item.getQuantity() + 1;
+
+            CartManager.updateQuantity(item.getName(), newQuantity, new CartManager.CartActionCallback() {
+                @Override
+                public void onSuccess() {
+                    item.setQuantity(newQuantity);
+                    notifyItemChanged(position);
+
+                    if (listener != null) {
+                        listener.onCartUpdated();
+                    }
+                }
+
+                @Override
+                public void onFailure(String message) {
+                    Toast.makeText(context, "فشل تحديث الكمية: " + message, Toast.LENGTH_LONG).show();
+                }
+            });
         });
 
         holder.btnMinus.setOnClickListener(v -> {
             if (item.getQuantity() > 1) {
-                item.setQuantity(item.getQuantity() - 1);
-                CartManager.updateCart(context);
-                notifyItemChanged(position);
-                listener.onCartUpdated();
+                int newQuantity = item.getQuantity() - 1;
+
+                CartManager.updateQuantity(item.getName(), newQuantity, new CartManager.CartActionCallback() {
+                    @Override
+                    public void onSuccess() {
+                        item.setQuantity(newQuantity);
+                        notifyItemChanged(position);
+
+                        if (listener != null) {
+                            listener.onCartUpdated();
+                        }
+                    }
+
+                    @Override
+                    public void onFailure(String message) {
+                        Toast.makeText(context, "فشل تحديث الكمية: " + message, Toast.LENGTH_LONG).show();
+                    }
+                });
             } else {
                 new AlertDialog.Builder(context)
                         .setTitle("حذف المنتج")
                         .setMessage("هل تريد حذف المنتج من السلة؟")
                         .setPositiveButton("نعم", (dialog, which) -> {
-                            CartManager.removeItem(context, position);
-                            cartList.remove(position);
-                            notifyItemRemoved(position);
-                            notifyItemRangeChanged(position, cartList.size());
-                            listener.onCartUpdated();
+                            CartManager.removeItem(item.getName(), new CartManager.CartActionCallback() {
+                                @Override
+                                public void onSuccess() {
+                                    cartList.remove(position);
+                                    notifyItemRemoved(position);
+                                    notifyItemRangeChanged(position, cartList.size());
+
+                                    if (listener != null) {
+                                        listener.onCartUpdated();
+                                    }
+                                }
+
+                                @Override
+                                public void onFailure(String message) {
+                                    Toast.makeText(context, "فشل حذف المنتج: " + message, Toast.LENGTH_LONG).show();
+                                }
+                            });
                         })
                         .setNegativeButton("إلغاء", null)
                         .show();
@@ -80,14 +125,17 @@ public class CartAdapter extends RecyclerView.Adapter<CartAdapter.CartViewHolder
     }
 
     public static class CartViewHolder extends RecyclerView.ViewHolder {
-        TextView tvName, tvPrice, tvQuantity;
+        ImageView imgCartItem;
+        TextView tvName, tvPrice, tvQuantity, tvTotal;
         ImageButton btnPlus, btnMinus;
 
         public CartViewHolder(@NonNull View itemView) {
             super(itemView);
+            imgCartItem = itemView.findViewById(R.id.imgCartItem);
             tvName = itemView.findViewById(R.id.tvCartItemName);
             tvPrice = itemView.findViewById(R.id.tvCartItemPrice);
             tvQuantity = itemView.findViewById(R.id.tvCartItemQuantity);
+            tvTotal = itemView.findViewById(R.id.tvCartItemTotal);
             btnPlus = itemView.findViewById(R.id.btnPlus);
             btnMinus = itemView.findViewById(R.id.btnMinus);
         }

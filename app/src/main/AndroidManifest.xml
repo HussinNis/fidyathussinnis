@@ -11,21 +11,23 @@
         android:roundIcon="@mipmap/ic_launcher_round"
         android:supportsRtl="true"
         android:theme="@style/Theme.Fidyathussinnis">
+        <activity android:name=".OrdersActivity" />
+
         <activity android:name=".StoreActivity" />
         <activity android:name=".ProductsActivity" />
         <activity android:name=".CalculatorActivity" />
         <activity android:name=".CartActivity" />
+        <activity android:name=".WelcomeActivity"/>
         <activity
-            android:name=".WelcomeActivity"
+            android:name=".SplashActivity"
             android:exported="true">
             <intent-filter>
-
-
                 <action android:name="android.intent.action.MAIN" />
-
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
         </activity>
+
+
     </application>
 
 </manifest>

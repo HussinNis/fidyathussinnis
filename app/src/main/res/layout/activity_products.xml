@@ -3,21 +3,24 @@
     android:layout_width="match_parent"
     android:layout_height="match_parent"
     android:orientation="vertical"
-    android:padding="16dp">
+    android:padding="16dp"
+    android:background="#F5F7FB">
 
     <LinearLayout
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:orientation="horizontal"
         android:gravity="center_vertical"
-        android:layout_marginBottom="12dp">
+        android:layout_marginBottom="16dp">
 
         <Button
             android:id="@+id/btnBackToStore"
-            android:layout_width="48dp"
-            android:layout_height="48dp"
+            android:layout_width="70dp"
+            android:layout_height="50dp"
             android:text="🔙"
             android:textSize="20sp"
+            android:textColor="#111827"
+            android:background="@drawable/bg_card"
             android:layout_marginEnd="8dp" />
 
         <TextView
@@ -27,22 +30,29 @@
             android:layout_weight="1"
             android:text="المنتجات"
             android:textSize="26sp"
-            android:textStyle="bold" />
+            android:textStyle="bold"
+            android:textColor="#111827" />
 
         <Button
             android:id="@+id/btnOpenCart"
             android:layout_width="wrap_content"
-            android:layout_height="48dp"
+            android:layout_height="50dp"
             android:text="🛒 0"
             android:textSize="18sp"
-            android:layout_marginEnd="8dp" />
+            android:textColor="#111827"
+            android:background="@drawable/bg_card"
+            android:layout_marginEnd="8dp"
+            android:paddingLeft="14dp"
+            android:paddingRight="14dp" />
 
         <Button
             android:id="@+id/btnLogoutFromProducts"
-            android:layout_width="48dp"
-            android:layout_height="48dp"
+            android:layout_width="60dp"
+            android:layout_height="50dp"
             android:text="🚪"
-            android:textSize="20sp" />
+            android:textSize="20sp"
+            android:textColor="#111827"
+            android:background="@drawable/bg_card" />
     </LinearLayout>
 
     <androidx.recyclerview.widget.RecyclerView

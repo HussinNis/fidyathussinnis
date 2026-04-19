@@ -1,0 +1,58 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:orientation="vertical"
+    android:padding="16dp"
+    android:layout_marginBottom="10dp"
+    android:background="#EEEEEE">
+
+    <TextView
+        android:id="@+id/tvOrderUserName"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="اسم المستخدم"
+        android:textSize="18sp"
+        android:textStyle="bold" />
+
+    <TextView
+        android:id="@+id/tvOrderEmail"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="الإيميل"
+        android:textSize="16sp"
+        android:layout_marginTop="4dp" />
+
+    <TextView
+        android:id="@+id/tvOrderTotal"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="المجموع"
+        android:textSize="16sp"
+        android:layout_marginTop="4dp" />
+
+    <TextView
+        android:id="@+id/tvOrderProductsCount"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="عدد المنتجات"
+        android:textSize="16sp"
+        android:layout_marginTop="4dp" />
+
+    <TextView
+        android:id="@+id/tvOrderStatus"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="الحالة"
+        android:textSize="16sp"
+        android:layout_marginTop="4dp" />
+
+    <TextView
+        android:id="@+id/tvOrderDate"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="التاريخ"
+        android:textSize="16sp"
+        android:layout_marginTop="4dp" />
+
+</LinearLayout>

@@ -10,6 +10,8 @@ import androidx.appcompat.app.AppCompatActivity;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 
+import com.google.firebase.firestore.ListenerRegistration;
+
 import java.util.ArrayList;
 
 public class ProductsActivity extends AppCompatActivity {
@@ -23,6 +25,7 @@ public class ProductsActivity extends AppCompatActivity {
 
     private double silverPricePerGram = 4.5;
     private final double profitPercent = 0.10;
+    private ListenerRegistration cartCountListener;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -43,20 +46,20 @@ public class ProductsActivity extends AppCompatActivity {
         if (type != null && type.equals("bars")) {
             tvProductsTitle.setText("السبائك");
 
-            addBarProduct("سبيكة 250 غرام", 250);
-            addBarProduct("سبيكة 500 غرام", 500);
-            addBarProduct("سبيكة 1 كيلو", 1000);
-            addBarProduct("أونصة سويسرية", 31.1035);
-            addBarProduct("أونصة إيطالية", 31.1035);
+            addBarProduct("سبيكة 250 غرام", 250, R.drawable.silver_bar250);
+            addBarProduct("سبيكة 500 غرام", 500, R.drawable.silver_bar500);
+            addBarProduct("سبيكة 1 كيلو", 1000, R.drawable.silver_bar1000);
+            addBarProduct("أونصة سويسرية", 31.1035, R.drawable.swisons);
+            addBarProduct("أونصة إيطالية", 31.1035, R.drawable.italons);
 
         } else if (type != null && type.equals("accessories")) {
             tvProductsTitle.setText("الإكسسوارات");
 
-            productList.add(new Product("خاتم فضة رجالي", 80, "خاتم فضة جاهز بسعر ثابت"));
-            productList.add(new Product("خاتم فضة نسائي", 75, "خاتم فضة نسائي بسعر ثابت"));
-            productList.add(new Product("سوار فضة", 150, "سوار فضة أنيق بسعر ثابت"));
-            productList.add(new Product("سلسال فضة", 180, "سلسال فضة بسعر ثابت"));
-            productList.add(new Product("حلق فضة", 60, "حلق فضة بسعر ثابت"));
+            productList.add(new Product("خاتم فضة رجالي", 80, "خاتم فضة جاهز بسعر ثابت", R.drawable.silver_ring));
+            productList.add(new Product("خاتم فضة نسائي", 75, "خاتم فضة نسائي بسعر ثابت", R.drawable.silver_ringman2));
+            productList.add(new Product("سوار فضة", 150, "سوار فضة أنيق بسعر ثابت", R.drawable.silver_bracelet));
+            productList.add(new Product("سلسال فضة", 180, "سلسال فضة بسعر ثابت", R.drawable.silver_slsal));
+            productList.add(new Product("حلق فضة", 60, "حلق فضة بسعر ثابت", R.drawable.silver_chain));
         }
 
         adapter = new ProductAdapter(this, productList, this::updateCartButtonCount);
@@ -80,26 +83,44 @@ public class ProductsActivity extends AppCompatActivity {
         updateCartButtonCount();
     }
 
-    private void addBarProduct(String name, double grams) {
+    @Override
+    protected void onDestroy() {
+        super.onDestroy();
+
+        if (cartCountListener != null) {
+            cartCountListener.remove();
+        }
+    }
+
+    private void addBarProduct(String name, double grams, int imageResId) {
         double basePrice = grams * silverPricePerGram;
         double profit = basePrice * profitPercent;
         int finalPrice = (int) Math.round(basePrice + profit);
 
-        String details = "الوزن: " + formatNumber(grams) + " غرام"
+        String details = "الوزن: " + (int) Math.round(grams) + " غرام"
                 + "\nالسعر الخام: " + (int) Math.round(basePrice) + " ₪"
                 + "\nالهامش: " + (int) Math.round(profit) + " ₪"
                 + "\nالسعر النهائي: " + finalPrice + " ₪";
 
-        productList.add(new Product(name, finalPrice, details));
-    }
-
-    private String formatNumber(double value) {
-        return String.valueOf((int) Math.round(value));
+        productList.add(new Product(name, finalPrice, details, imageResId));
     }
 
     private void updateCartButtonCount() {
-        int count = CartManager.getTotalItemsCount(this);
-        btnOpenCart.setText("🛒 " + count);
+        if (cartCountListener != null) {
+            cartCountListener.remove();
+        }
+
+        cartCountListener = CartManager.listenToCartCount(new CartManager.CartCountListenerCallback() {
+            @Override
+            public void onCountChanged(int count) {
+                btnOpenCart.setText("🛒 " + count);
+            }
+
+            @Override
+            public void onFailure(String message) {
+                btnOpenCart.setText("🛒 0");
+            }
+        });
     }
 
     private void showLogoutDialog() {
@@ -112,7 +133,7 @@ public class ProductsActivity extends AppCompatActivity {
     }
 
     private void logoutUser() {
-        UserManager.logout(this);
+        FirebaseUserManager.logout();
 
         Intent intent = new Intent(ProductsActivity.this, WelcomeActivity.class);
         intent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TASK);
