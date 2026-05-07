@@ -55,11 +55,11 @@ public class ProductsActivity extends AppCompatActivity {
         } else if (type != null && type.equals("accessories")) {
             tvProductsTitle.setText("الإكسسوارات");
 
-            productList.add(new Product("خاتم فضة رجالي", 80, "خاتم فضة جاهز بسعر ثابت", R.drawable.silver_ring));
-            productList.add(new Product("خاتم فضة نسائي", 75, "خاتم فضة نسائي بسعر ثابت", R.drawable.silver_ringman2));
-            productList.add(new Product("سوار فضة", 150, "سوار فضة أنيق بسعر ثابت", R.drawable.silver_bracelet));
+            productList.add(new Product("خاتم فضة رجالي", 80, "خاتم فضة جاهز بسعر ثابت", R.drawable.silver_ringman2));
+            productList.add(new Product("خاتم فضة نسائي", 75, "خاتم فضة نسائي بسعر ثابت", R.drawable.silver_ring));
+            productList.add(new Product("سوار فضة", 150, "سوار فضة أنيق بسعر ثابت", R.drawable.silver_chain));
             productList.add(new Product("سلسال فضة", 180, "سلسال فضة بسعر ثابت", R.drawable.silver_slsal));
-            productList.add(new Product("حلق فضة", 60, "حلق فضة بسعر ثابت", R.drawable.silver_chain));
+            productList.add(new Product("حلق فضة", 60, "حلق فضة بسعر ثابت", R.drawable.silver_bracelet));
         }
 
         adapter = new ProductAdapter(this, productList, this::updateCartButtonCount);
