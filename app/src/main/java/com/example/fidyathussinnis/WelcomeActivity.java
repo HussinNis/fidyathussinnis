@@ -44,8 +44,6 @@ public class WelcomeActivity extends AppCompatActivity {
         btnSubmit = findViewById(R.id.btnSubmit);
         tvModeHint = findViewById(R.id.tvModeHint);
 
-        checkLoggedInUser();
-
         btnTabLogin.setOnClickListener(v -> switchToLogin());
         btnTabSignup.setOnClickListener(v -> switchToSignup());
 
@@ -58,6 +56,7 @@ public class WelcomeActivity extends AppCompatActivity {
         });
 
         switchToLogin();
+        checkLoggedInUser();
     }
 
     private void checkLoggedInUser() {
@@ -138,9 +137,17 @@ public class WelcomeActivity extends AppCompatActivity {
                                 Toast.makeText(this, "Account created successfully", Toast.LENGTH_SHORT).show();
                                 openStore(fullName);
                             })
-                            .addOnFailureListener(e ->
-                                    Toast.makeText(this, "Failed to save user data: " + e.getMessage(), Toast.LENGTH_LONG).show()
-                            );
+                            .addOnFailureListener(e -> {
+                                firebaseUser.delete()
+                                        .addOnCompleteListener(task -> {
+                                            FirebaseAuth.getInstance().signOut();
+                                            Toast.makeText(
+                                                    this,
+                                                    "تم إنشاء الحساب لكن فشل حفظ البيانات في Firestore: " + e.getMessage(),
+                                                    Toast.LENGTH_LONG
+                                            ).show();
+                                        });
+                            });
                 })
                 .addOnFailureListener(e ->
                         Toast.makeText(this, "Sign up failed: " + e.getMessage(), Toast.LENGTH_LONG).show()
